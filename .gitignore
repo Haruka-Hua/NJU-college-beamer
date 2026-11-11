@@ -18,3 +18,7 @@ build/
 *.pdf
 *.fdb_latexmk
 *.fls
+
+tmp/
+
+.zcode/

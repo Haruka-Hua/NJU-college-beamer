@@ -1,4 +1,12 @@
 \ProvidesPackage{collegeBeamer}
+% ---------------------------------------------------------------------------
+%  collegeBeamer -- a Beamer theme for universities, in the visual language of
+%  the Nanjing University deck (solid main-colour title pages, a running
+%  header with the section number, a thick accent rule, tinted panels).
+%
+%  Usage:  \usepackage[<college>,<lang>]{collegeBeamer}
+%           \usepackage[nju,zh]{collegeBeamer}   % Chinese, needs XeLaTeX
+% ---------------------------------------------------------------------------
 
 % required packages
 \RequirePackage{etoolbox}
@@ -6,147 +14,321 @@
 \RequirePackage{listings}
 \RequirePackage{graphicx}
 \RequirePackage{geometry}
-\RequirePackage{amsfonts, amsmath, bm, oldgerm, lmodern}  % math
+\RequirePackage{amsfonts, amsmath, bm, oldgerm}  % math
 \RequirePackage{verbatim}
 \RequirePackage{animate}
 \RequirePackage{xcolor}
+\RequirePackage{booktabs}
+\RequirePackage{colortbl}
+\RequirePackage{array}
+\RequirePackage{iftex}
+\RequirePackage{eso-pic}
+
+% --- Latin fonts ----------------------------------------------------------
+% With XeTeX/LuaLaTeX we can use the same serif / grotesque pairing as the
+% reference deck; pdfLaTeX falls back to Latin Modern.
+\newif\ifcollegeUnicodeEngine
+\ifXeTeX\collegeUnicodeEnginetrue\else
+  \ifLuaTeX\collegeUnicodeEnginetrue\else\fi
+\fi
+\ifcollegeUnicodeEngine
+  \RequirePackage{fontspec}
+  \defaultfontfeatures{Ligatures=TeX}
+  \IfFontExistsTF{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{}
+  \IfFontExistsTF{TeX Gyre Heros}{\setsansfont{TeX Gyre Heros}}{}
+  \IfFontExistsTF{TeX Gyre Cursor}{\setmonofont{TeX Gyre Cursor}}{}
+\else
+  \RequirePackage{lmodern}
+\fi
 
 % --- package options ---
 % languages
 \newcommand{\tocStr}{Table of Contents}
 \newcommand{\qaStr}{\textsl{Thank you for listening! \\ Your feedback will be highly appreciated!}}
 
+\newif\ifcollegeChinese
+\newif\ifcollegeColorLogo
+
 \DeclareOption{en}{
+    \collegeChinesefalse
     \renewcommand{\tocStr}{Table of Contents}
     \renewcommand{\qaStr}{\textsl{Thank you for listening! \\ Your feedback will be highly appreciated!}}
 }
 
 \DeclareOption{zh}{
-    % add to the preamble: \usepackage{xeCJK}
-    % compile with xeLaTeX
+    % Chinese needs XeLaTeX (or LuaLaTeX); fonts are auto-detected below.
+    \collegeChinesetrue
     \renewcommand{\tocStr}{目录}
     \renewcommand{\qaStr}{\textbf{感谢您的聆听和反馈}}
 }
+
+% which logo file to use: the outlined one (default) or the solid colour tile
+\DeclareOption{logo=trans}{\collegeColorLogofalse}
+\DeclareOption{logo=color}{\collegeColorLogotrue}
 
 % colleges & institutes
 \newcommand{\maincolorRGB}{128, 57, 61}
 \newcommand{\colorlogoPath}{src/PolyU/color-logo.png}
 \newcommand{\translogoPath}{src/PolyU/trans-logo.png}
 \newcommand{\backgroundPath}{src/PolyU/background.png}
+\newcommand{\titleartPath}{src/PolyU/art.png}
+\newcommand{\sectionartPath}{src/PolyU/sectionart.png}
+
+% Default title-page artwork: the college's line drawing, bled off the
+% bottom-right corner.  Colleges may override this with their own
+% composition (see the nju option below).
+\newcommand{\collegeTitleArt}{%
+  \node[anchor=south east, inner sep=0pt] at (17.4,10.0)
+    {\includegraphics[height=6.2cm]{\titleartPath}};%
+}
+
 \DeclareOption{nju}{
   \renewcommand{\maincolorRGB}{106, 0, 95}  % the theme's main color in RGB
   \renewcommand{\colorlogoPath}{src/NJU/color-logo.png}  % path to the logo image with background color
   \renewcommand{\translogoPath}{src/NJU/trans-logo.png}  % path to the logo image with transparent background
   \renewcommand{\backgroundPath}{src/NJU/background.png}  % path to the background image
+  \renewcommand{\sectionartPath}{src/NJU/sectionart.png}  % path to the section-page artwork
+  % A pair of torn-paper collages, the way the reference deck does it.
+  \renewcommand{\collegeTitleArt}{%
+    \node[anchor=north east, inner sep=0pt] at (16.0,1.80)
+      {\includegraphics[width=3.7cm]{src/NJU/art/nju-gate.png}};%
+    \node[anchor=north west, inner sep=0pt] at (9.0,3.70)
+      {\includegraphics[width=7.0cm]{src/NJU/art/nju-beida.png}};%
+  }%
 }
 \DeclareOption{polyu}{
     \renewcommand{\maincolorRGB}{128, 57, 61}
     \renewcommand{\colorlogoPath}{src/PolyU/color-logo.png}
     \renewcommand{\translogoPath}{src/PolyU/trans-logo.png}
     \renewcommand{\backgroundPath}{src/PolyU/background.png}
+    \renewcommand{\titleartPath}{src/PolyU/art.png}
+    \renewcommand{\sectionartPath}{src/PolyU/sectionart.png}
 }
-
 \DeclareOption{szu}{
     \renewcommand{\maincolorRGB}{124, 36, 64}
     \renewcommand{\colorlogoPath}{src/SZU/color-logo.png}
     \renewcommand{\translogoPath}{src/SZU/trans-logo.png}
     \renewcommand{\backgroundPath}{src/SZU/background.png}
+    \renewcommand{\titleartPath}{src/SZU/art.png}
+    \renewcommand{\sectionartPath}{src/SZU/sectionart.png}
 }
-
 \DeclareOption{swu}{
     \renewcommand{\maincolorRGB}{39, 32, 99}
     \renewcommand{\colorlogoPath}{src/SWU/color-logo.png}
     \renewcommand{\translogoPath}{src/SWU/trans-logo.png}
     \renewcommand{\backgroundPath}{src/SWU/background.png}
+    \renewcommand{\titleartPath}{src/SWU/art.png}
+    \renewcommand{\sectionartPath}{src/SWU/sectionart.png}
 }
-
 \DeclareOption{hit}{
     \renewcommand{\maincolorRGB}{42, 101, 128}
-    \renewcommand{\colorlogoPath}{src/hit/color-logo.png}
-    \renewcommand{\translogoPath}{src/hit/trans-logo.png}
-    \renewcommand{\backgroundPath}{src/hit/background.png}
+    \renewcommand{\colorlogoPath}{src/HIT/color-logo.png}
+    \renewcommand{\translogoPath}{src/HIT/trans-logo.png}
+    \renewcommand{\backgroundPath}{src/HIT/background.png}
+    \renewcommand{\titleartPath}{src/HIT/art.png}
+    \renewcommand{\sectionartPath}{src/HIT/sectionart.png}
 }
-
 \DeclareOption{saes}{
     \renewcommand{\maincolorRGB}{5, 103, 81}
     \renewcommand{\colorlogoPath}{src/SAES/color-logo.png}
     \renewcommand{\translogoPath}{src/SAES/trans-logo.png}
     \renewcommand{\backgroundPath}{src/SAES/background.png}
+    \renewcommand{\titleartPath}{src/SAES/art.png}
+    \renewcommand{\sectionartPath}{src/SAES/sectionart.png}
 }
-
 \DeclareOption{zafu}{
     \renewcommand{\maincolorRGB}{0, 133, 75}
     \renewcommand{\colorlogoPath}{src/ZAFU/color-logo.png}
     \renewcommand{\translogoPath}{src/ZAFU/trans-logo.png}
     \renewcommand{\backgroundPath}{src/ZAFU/background.png}
+    \renewcommand{\titleartPath}{src/ZAFU/art.png}
+    \renewcommand{\sectionartPath}{src/ZAFU/sectionart.png}
 }
-
 \DeclareOption{red}{
     \renewcommand{\maincolorRGB}{128, 57, 61}
     \renewcommand{\colorlogoPath}{src/Red/color-logo.png}
     \renewcommand{\translogoPath}{src/Red/trans-logo.png}
     \renewcommand{\backgroundPath}{src/Red/background.png}
+    \renewcommand{\titleartPath}{src/Red/art.png}
+    \renewcommand{\sectionartPath}{src/Red/sectionart.png}
     \renewcommand{\qaStr}{\textbf{全世界无产者，联合起来！}}
 }
 
 \ProcessOptions\relax
 
+% --- Chinese typesetting ---------------------------------------------------
+% Load the CJK package for the engine in use and pick the first available
+% CJK family.  Users can still override this in their own preamble with
+% \setCJKmainfont / \setCJKsansfont (XeLaTeX) or \setmainjfont /
+% \setsansjfont (LuaLaTeX).
+%
+% The font lookup is kept in a plain macro: fontspec's conditional must not
+% be nested inside more than one user-level \if.
+\newcommand{\collegeSetCJKmain}{%
+  \IfFontExistsTF{Noto Serif CJK SC}{\setCJKmainfont{Noto Serif CJK SC}}{%
+    \IfFontExistsTF{Source Han Serif SC}{\setCJKmainfont{Source Han Serif SC}}{%
+      \IfFontExistsTF{SimSun}{\setCJKmainfont{SimSun}}{}%
+    }%
+  }%
+}
+\newcommand{\collegeSetCJKsans}{%
+  \IfFontExistsTF{Noto Sans CJK SC}{\setCJKsansfont{Noto Sans CJK SC}}{%
+    \IfFontExistsTF{Source Han Sans SC}{\setCJKsansfont{Source Han Sans SC}}{%
+      \IfFontExistsTF{Microsoft YaHei}{\setCJKsansfont{Microsoft YaHei}}{}%
+    }%
+  }%
+}
+\newcommand{\collegeSetLuatexjaMain}{%
+  \IfFontExistsTF{Noto Serif CJK SC}{\setmainjfont{Noto Serif CJK SC}}{%
+    \IfFontExistsTF{Source Han Serif SC}{\setmainjfont{Source Han Serif SC}}{%
+      \IfFontExistsTF{SimSun}{\setmainjfont{SimSun}}{}%
+    }%
+  }%
+}
+\newcommand{\collegeSetLuatexjaSans}{%
+  \IfFontExistsTF{Noto Sans CJK SC}{\setsansjfont{Noto Sans CJK SC}}{%
+    \IfFontExistsTF{Source Han Sans SC}{\setsansjfont{Source Han Sans SC}}{%
+      \IfFontExistsTF{Microsoft YaHei}{\setsansjfont{Microsoft YaHei}}{}%
+    }%
+  }%
+}
+
+\newif\ifcollegeXeCJK
+\newif\ifcollegeLuatexja
+\newif\ifcollegeCJKok
+\ifcollegeChinese
+  \ifXeTeX\collegeXeCJKtrue\collegeCJKoktrue\fi
+  \ifLuaTeX\collegeLuatexjatrue\collegeCJKoktrue\fi
+\fi
+\ifcollegeChinese
+  \ifcollegeCJKok\else
+    \PackageWarning{collegeBeamer}{%
+      Chinese text needs XeLaTeX or LuaLaTeX -- recompile with xelatex}
+  \fi
+\fi
+
+% The font lookup runs in a single boolean conditional: fontspec's own
+% conditional must not sit inside more than one user-level \if.
+\ifcollegeXeCJK
+  \ifcsdef{ver@sty.xeCJK}{}{\RequirePackage{xeCJK}}
+  \collegeSetCJKmain
+  \collegeSetCJKsans
+\fi
+
+\ifcollegeLuatexja
+  \ifcsdef{ver@sty.luatexja-fontspec}{}{\RequirePackage{luatexja-fontspec}}
+  \collegeSetLuatexjaMain
+  \collegeSetLuatexjaSans
+\fi
+
 % --- typeset & elements settings ---
 % force 16:9 aspect ratio
 \geometry{paperwidth=16cm,paperheight=9cm}
 
-% logo
-\pgfdeclareimage[width=0.09\paperwidth]{colorlogo}{\colorlogoPath}
-\pgfdeclareimage[width=0.09\paperwidth]{translogo}{\translogoPath}
-\newcommand{\@makelogo}{colorlogo}
+% Page geometry.  The deck this theme is modelled on runs very close to the
+% paper edge, so the text block is wide and the margins are small.
+\setbeamersize{text margin left=0.60cm, text margin right=0.60cm}
 
-\setbeamertemplate{headline}{\hspace{0.06\textwidth}\pgfuseimage{\@makelogo}} % put the logo in each slide's top left area
+% Frames are top aligned by default, like the reference deck.  An explicit
+% [c] or [b] on a frame still works.
+\beamer@centeredfalse
 
-% color
+% --- colour system ---
 \definecolor{maincolor}{RGB}{\maincolorRGB}
-\definecolor{airforceblue}{rgb}{0.36, 0.54, 0.66}
-\definecolor{morelightgray}{rgb}{0.9, 0.9, 0.9}
+\definecolor{inkcolor}{HTML}{2E2B2F}      % body text
+\definecolor{mutedcolor}{HTML}{6C656E}    % secondary text, page numbers
+\definecolor{airforceblue}{HTML}{2E5F7F} % secondary accent (kept for compatibility)
 
+\colorlet{mainlight}{maincolor!8!white}   % panel background
+\colorlet{mainpaler}{maincolor!5!white}   % zebra rows, code background
+\colorlet{mainrule}{maincolor!30!white}   % hairlines and borders
+
+% --- logo ---
+\pgfdeclareimage[height=0.62cm]{colorlogo}{\colorlogoPath}
+\pgfdeclareimage[height=0.62cm]{translogo}{\translogoPath}
+\newcommand{\@makelogo}{translogo}
+\ifcollegeColorLogo\relax
+  \renewcommand{\@makelogo}{colorlogo}
+\fi
+
+% The small framed badge used in the running header.
+\newcommand{\collegeLogobadge}{%
+  \tikz[baseline=(badge.base)]{%
+    \node[draw=maincolor, rounded corners=1.4pt, line width=0.35pt,
+          inner sep=1.4pt, outer sep=0pt] (badge)
+          {\pgfuseimage{\@makelogo}};}%
+}
+
+% --- fonts ---
+\usefonttheme{serif}   % body text is serif; headings switch to sans below
+
+\setbeamerfont{normal text}{size=\small}
+\setbeamerfont{headline}{family=\sffamily, series=\bfseries, size=\fontsize{15}{17}}
+\setbeamerfont{frametitle}{family=\sffamily, series=\bfseries, size=\fontsize{12}{14.5}}
+\setbeamerfont{framesubtitle}{family=\sffamily, series=\mdseries, size=\fontsize{9.5}{12}}
+\setbeamerfont{title}{family=\sffamily, series=\bfseries, size=\fontsize{20}{23}}
+\setbeamerfont{subtitle}{family=\sffamily, series=\mdseries, size=\fontsize{12.5}{15}}
+\setbeamerfont{author}{family=\sffamily, series=\mdseries, size=\fontsize{11}{13}}
+\setbeamerfont{date}{family=\sffamily, series=\mdseries, size=\fontsize{9.5}{12}}
+\setbeamerfont{block title}{family=\sffamily, series=\bfseries, size=\small}
+\setbeamerfont{block body}{size=\small}
+\setbeamerfont{footline}{family=\sffamily, size=\scriptsize}
+\setbeamerfont{toc}{family=\sffamily}
+\setbeamerfont{section in toc}{family=\sffamily, series=\bfseries, size=\normalsize}
+
+% --- colours used by beamer ---
+\setbeamercolor{normal text}{fg=inkcolor, bg=white}
+\setbeamercolor{structure}{fg=maincolor}
+\setbeamercolor{title}{fg=maincolor}
+\setbeamercolor{alerted text}{fg=maincolor}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=black}
+\setbeamercolor{headline}{fg=maincolor}
+\setbeamercolor{frametitle}{fg=maincolor}
+\setbeamercolor{framesubtitle}{fg=mutedcolor}
+\setbeamercolor{footline}{fg=mutedcolor}
+\setbeamercolor{background canvas}{bg=white}
+
+% Switch between the light (white) and the dark (main colour) background.
 \newcommand{\themecolor}[1]{
     \ifstrequal{#1}{colorbg}{
-        \renewcommand{\@makelogo}{translogo}
         \setbeamercolor{normal text}{fg=white, bg=maincolor}
         \setbeamercolor{structure}{fg=white}
+        \setbeamercolor{background canvas}{bg=maincolor}
+        \setbeamercolor{toc section}{fg=white}
+        \setbeamercolor{toc section shaded}{fg=white!60!maincolor}
+        \setbeamercolor{toc subsection}{fg=white}
+        \setbeamercolor{toc subsection shaded}{fg=white!60!maincolor}
     }{
-        \renewcommand{\@makelogo}{colorlogo}
-        \setbeamercolor{normal text}{fg=darkgray, bg=white}
+        \setbeamercolor{normal text}{fg=inkcolor, bg=white}
         \setbeamercolor{structure}{fg=maincolor}
+        \setbeamercolor{background canvas}{bg=white}
+        \setbeamercolor{toc section}{fg=maincolor}
+        \setbeamercolor{toc section shaded}{fg=mutedcolor}
+        \setbeamercolor{toc subsection}{fg=maincolor}
+        \setbeamercolor{toc subsection shaded}{fg=mutedcolor}
     }
 }
 \themecolor{white} % default: white theme
 % P.S. Beamer colors should be set in the preamble. It often works fine in the document itself, but NOT for normal text foreground. Thus \themecolor should only be called from the preamble
 
-\setbeamercolor{title}{fg=maincolor}
-\setbeamercolor{alerted text}{fg=maincolor}
-\setbeamercolor{author}{fg=black}
-\setbeamercolor{date}{fg=black}
-
-% font
-% \renewcommand{\familydefault}{\sfdefault}  % sans-serif
-\usefonttheme{serif}
-
-\setbeamerfont{title}{series=\scshape, size=\Large}
-\setbeamerfont{subtitle}{series=\mdseries, size=\normalsize}
-\setbeamerfont{author}{size=\normalsize}
-\setbeamerfont{date}{size=\normalsize}
-
-\setbeamerfont{frametitle}{series=\bfseries}
-\setbeamerfont{framesubtitle}{series=\mdseries}
-\setbeamerfont{footline}{size=\scriptsize}
-
 % no navigation symbols
 \setbeamertemplate{navigation symbols}{}
 
-% footline
-\newcommand{\@footlinepayoff}{\@SINTEFmotto}
+% --- footline -------------------------------------------------------------
+% Redefine this (after \usepackage{collegeBeamer}) to add a motto to the footer.
+\providecommand{\collegeMotto}{}
+\newcommand{\@footlinepayoff}{\collegeMotto}
+
+% zero padded frame number, e.g. 04
+\newcommand{\collegeFrameNumber}{%
+  \ifnum\insertframenumber<10 0\fi\insertframenumber}
+
 \setbeamertemplate{footline}{
-    \begin{beamercolorbox}[wd=\textwidth, ht=5mm, dp=3mm, rightskip=1cm]{footline}
-    \usebeamerfont{footline}\hfill\@footlinepayoff
+    \begin{beamercolorbox}[wd=\paperwidth, ht=2.6ex, dp=1.3ex, rightskip=0.60cm]{footline}
+    \usebeamerfont{footline}\hfill
+    \ifstrempty{\@footlinepayoff}{}{\@footlinepayoff\hspace{1.4cm}}%
+    \collegeFrameNumber
     \end{beamercolorbox}
 }
 
@@ -154,80 +336,189 @@
     % if #1 is empty, makes footline transparent
     \ifstrempty{#1}{
         \renewcommand{\@footlinepayoff}{}
-        \setbeamercolor{footline}{bg=}
+        \setbeamercolor{footline}{fg=mutedcolor, bg=}
     }{
-        \renewcommand{\@footlinepayoff}{\@SINTEFmotto}
+        \renewcommand{\@footlinepayoff}{\collegeMotto}
         \setbeamercolor{footline}{fg=white, bg=#1}
     }
 }
-\footlinecolor{} % default: no footline
+\footlinecolor{} % default: no footline bar
 
-% block
+% --- running header --------------------------------------------------------
+% The section number, zero padded to two digits (01, 02, ...).
+% It lives in a macro on purpose: beamer scans frame bodies for '<' and would
+% otherwise mistake the comparison below for an overlay specification.
+\newcommand{\collegeSectionNumber}{%
+  \ifnum\c@section<10 0\fi\insertsectionnumber}
+
+% "03  Long-term sample" -- the section number and name, repeated on every
+% slide, exactly like the reference deck.  Redefine \collegeRunningHead in
+% your own preamble to change it.
+\newcommand{\collegeRunningHead}{%
+  \ifnum\c@section>0
+    \collegeSectionNumber\enspace\secname
+  \fi}
+
+\setbeamertemplate{headline}{%
+  \begin{beamercolorbox}[wd=\paperwidth, ht=0.95cm, dp=0.15cm,
+                         leftskip=1.42cm, rightskip=0.60cm]{headline}%
+    \llap{\raisebox{-0.14cm}[0pt][0pt]{\makebox[0.96cm][l]{\collegeLogobadge}}}%
+    {\usebeamerfont{headline}\usebeamercolor[fg]{headline}\collegeRunningHead}%
+  \end{beamercolorbox}%
+  \nointerlineskip
+  \hbox to \paperwidth{%
+    \hskip1.42cm{\color{maincolor}\rule{\dimexpr\paperwidth-2.02cm\relax}{0.06cm}}\hss}%
+}
+
+% --- frame title ------------------------------------------------------------
+% The frame title sits *under* the accent rule as a bold lead line, the way
+% the reference deck uses its purple sentences.
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \vskip0.34cm
+  \begin{beamercolorbox}[wd=\textwidth, leftskip=0pt, rightskip=0pt]{frametitle}%
+    \usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}\insertframetitle%
+    \ifx\insertframesubtitle\@empty\else%
+      \par\vskip0.14cm
+      {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle}%
+    \fi%
+  \end{beamercolorbox}%
+  \vskip0.26cm
+}
+\setbeamertemplate{frametitle continuation}{}
+
+% --- blocks -----------------------------------------------------------------
 \setbeamertemplate{blocks}[rounded]
-\setbeamerfont{block title}{series=\centering, size=\small}
-\setbeamerfont{block body}{size=\scriptsize}
-\setbeamercolor{block title}{fg=airforceblue, bg=morelightgray}
-\setbeamercolor{block body}{fg=darkgray, bg=morelightgray}
+\colorlet{mainstrong}{maincolor!16!white}   % highlighted panels
+\setbeamercolor{block title}{fg=maincolor, bg=mainlight}
+\setbeamercolor{block body}{fg=inkcolor, bg=mainlight}
+\setbeamercolor{block title alerted}{fg=maincolor, bg=mainstrong}
+\setbeamercolor{block body alerted}{fg=inkcolor, bg=mainstrong}
+\setbeamercolor{block title example}{fg=maincolor, bg=mainpaler}
+\setbeamercolor{block body example}{fg=inkcolor, bg=mainpaler}
 
-% bullets
-\setbeamertemplate{itemize item}{\textbullet}
-\setbeamertemplate{itemize subitem}{\textemdash}
-\setbeamertemplate{itemize subsubitem}{\ensuremath{\circ}}
+% --- bullets ----------------------------------------------------------------
+\setbeamertemplate{itemize item}{\raisebox{0.15ex}{\textcolor{maincolor}{\rule{0.45ex}{0.45ex}}}}
+\setbeamertemplate{itemize subitem}{\textcolor{maincolor}{\textemdash}}
+\setbeamertemplate{itemize subsubitem}{\textcolor{maincolor}{\ensuremath{\circ}}}
 
-% table of cotents
-\setbeamertemplate{section in toc}{$\blacktriangleright$~\inserttocsection}  % section name format
-\setbeamertemplate{subsection in toc}{}  % don't present subsection
+% --- table of contents ------------------------------------------------------
+% The entries follow the current theme, so a table of contents stays readable
+% both on a white page and on the solid colour section page.
+\setbeamercolor{toc section}{fg=maincolor}
+\setbeamercolor{toc section shaded}{fg=mutedcolor}
+\setbeamercolor{toc subsection}{fg=maincolor}
+\setbeamercolor{toc subsection shaded}{fg=mutedcolor}
 
-% code bolck setting
+% With the 'currentsection' option the current section uses the plain
+% template (highlighted) and the others the shaded one (dimmed).
+\setbeamertemplate{section in toc}{%
+  \usebeamercolor[fg]{toc section}\bfseries
+  \inserttocsectionnumber.\enspace\inserttocsection}
+\setbeamertemplate{section in toc shaded}{%
+  \usebeamercolor[fg]{toc section shaded}
+  \inserttocsectionnumber.\enspace\inserttocsection}
+\setbeamertemplate{subsection in toc}{%
+  \usebeamercolor[fg]{toc subsection}\inserttocsubsection}
+\setbeamertemplate{subsection in toc shaded}{%
+  \usebeamercolor[fg]{toc subsection shaded}\inserttocsubsection}
+
+% --- code blocks ------------------------------------------------------------
 \definecolor{codegreen}{RGB}{101,218,120}
 \definecolor{darkgreen}{RGB}{93,158,82}
 \definecolor{darkyellow}{RGB}{245,194,105}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{codegray}{HTML}{6C656E}
+\definecolor{codepurple}{HTML}{7C5293}
 
 \lstdefinestyle{mystyle}{
-    commentstyle=\color{airforceblue},
-    keywordstyle=\color{magenta},
+    % The listing has no frame of its own: the surrounding beamer block
+    % provides the panel, which keeps it exactly on the text column.
+    frame=none,
+    commentstyle=\color{codegray}\itshape,
+    keywordstyle=\color{maincolor}\bfseries,
     numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
+    stringstyle=\color{airforceblue},
     basicstyle=\ttfamily\scriptsize,
     breakatwhitespace=false,
     breaklines=true,
     captionpos=b,
     keepspaces=true,
     numbers=left,
-    numbersep=5pt,
+    numbersep=6pt,
     showspaces=false,
     showstringspaces=false,
     showtabs=false,
     tabsize=4,
-    xleftmargin=10pt,
-    xrightmargin=10pt,
+    % The line numbers need room on the left; the code is inset from the
+    % edge of the surrounding panel.
+    xleftmargin=14pt,
+    xrightmargin=8pt,
 }
 
 \lstset{style=mystyle}
 
-% --- section & frame setting ---
+% --- code panel -------------------------------------------------------------
+% A tinted panel for code listings.  Unlike a beamer block it lines up
+% exactly with the text column, so it does not stick out past the accent
+% rule.
+\newenvironment{codepanel}[1]{%
+  \par\noindent
+  \begin{beamercolorbox}[wd=\textwidth,sep=0.30cm]{block body}%
+    {\sffamily\bfseries\textcolor{maincolor}{#1}\par}%
+    \vspace{0.12cm}%
+}{%
+  \end{beamercolorbox}%
+  \par\vspace{0.20cm}%
+}
+
+% --- section & frame setting ------------------------------------------------
 % subsection
 \newcommand{\strsubsec}{Section \thesection.\thesubsection}
 
-% presents subtitle on each frame
-\makeatletter
-    \pretocmd\beamer@checkframetitle{\framesubtitle{\thesection \, \secname}}
-\makeatother
+% Background for the divider pages: a soft diagonal gradient in the main
+% colour, with the campus line drawing faded into the bottom right corner.
+\newcommand{\collegeGradientBackground}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \shade[left color=maincolor, right color=maincolor!68!black, shading angle=305]
+      (current page.south west) rectangle (current page.north east);
+  \end{tikzpicture}%
+}
 
-% avoid numbering of frames that are breaked into multiply slides
-\setbeamertemplate{frametitle continuation}{}
+\newcommand{\collegeDividerBackground}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \shade[left color=maincolor, right color=maincolor!68!black, shading angle=305]
+      (current page.south west) rectangle (current page.north east);
+    \node[anchor=south east, inner sep=0pt, opacity=0.26] at
+      ([xshift=0.5cm,yshift=0.25cm]current page.south east)
+      {\includegraphics[height=5.6cm]{\sectionartPath}};
+  \end{tikzpicture}%
+}
 
 % section page with the current section highlighted
 \AtBeginSection[]
 {
     \begingroup
     \setbeamertemplate{footline}{}
+    \setbeamertemplate{headline}{}
     \themecolor{colorbg}
-    \begin{frame}{\tocStr}
-        \tableofcontents[currentsection]
+    \setbeamertemplate{background}{\collegeDividerBackground}
+    % Expand the padded section number here: beamer scans frame bodies for
+    % '<' and would read the comparison as an overlay specification.
+    \ifnum\c@section<10 \def\collegeSectionPad{0}\else\def\collegeSectionPad{}\fi
+    \edef\collegeSectionNumber{\collegeSectionPad\insertsectionnumber}
+    \begin{frame}[plain]{}
+        \vspace{0.45cm}
+        {\color{white}\sffamily\bfseries\fontsize{11}{13}\selectfont \tocStr\par}
+        \vspace{0.35cm}
+        {\color{white}\sffamily\bfseries\fontsize{34}{38}\selectfont
+         \collegeSectionNumber\par}
+        \vspace{0.15cm}
+        {\color{white}\sffamily\bfseries\fontsize{18}{22}\selectfont\secname\par}
+        \vspace{0.45cm}
+        \begin{minipage}{0.86\textwidth}
+          \color{white}
+          \tableofcontents[currentsection]
+        \end{minipage}
     \end{frame}
     \endgroup
 }
@@ -235,45 +526,61 @@
 % subsection title page
 \AtBeginSubsection[]
 {
-    \begin{frame}{\,}{\thesection \, \secname}
-        \fontfamily{ptm}\selectfont
-        \centering\textsl{\textbf{\textcolor{maincolor}{
-            \large Section \thesection.\thesubsection
-            \vskip15pt
-            \LARGE \subsecname
-        }}}
+    \begingroup
+    \setbeamertemplate{footline}{}
+    \setbeamertemplate{headline}{}
+    \themecolor{colorbg}
+    \setbeamertemplate{background}{\collegeDividerBackground}
+    \begin{frame}[plain]{}
+        \vspace*{1.9cm}
+        {\color{white!60!maincolor}\sffamily\bfseries\fontsize{12}{15}\selectfont
+         \thesection\enspace\secname\par}
+        \vspace{0.34cm}
+        {\color{white}\sffamily\bfseries\fontsize{26}{30}\selectfont
+         \thesection.\thesubsection\enspace\subsecname\par}
     \end{frame}
+    \endgroup
 }
 
-% --- page elements ---
-% frame title & subtitle layout
-\setbeamertemplate{frametitle}{
-    \vspace*{-3.5ex}
-    \begin{beamercolorbox}[leftskip=2cm]{frametitle}
-    \usebeamerfont{frametitle}\insertframetitle\\
-    \usebeamerfont{framesubtitle}\insertframesubtitle
-    \end{beamercolorbox}
+% --- title page --------------------------------------------------------------
+% The title page is drawn entirely on the page canvas: a solid main-colour
+% background, the school badge, the title block and the artwork.
+
+\newcommand{\collegeTitlePage}{%
+  \begin{tikzpicture}[x=1cm, y=-1cm, overlay]
+    % badge
+    \node[anchor=north west, inner sep=0pt] at (0.57,0.52)
+      {\includegraphics[height=0.68cm]{\translogoPath}};
+    % title block: one flowing column, so a two-line title still works
+    \node[anchor=north west, inner sep=0pt, align=left, text width=8.4cm]
+      at (1.20,2.00) {%
+        {\sffamily\bfseries\fontsize{20}{24}\selectfont
+         \textcolor{white}{\inserttitle}\par}%
+        \vspace{0.24cm}%
+        {\sffamily\mdseries\fontsize{12.5}{16}\selectfont
+         \textcolor{white!88!maincolor}{\insertsubtitle}\par}%
+        \vspace{0.34cm}%
+        {\color{white}\rule{7.35cm}{0.45pt}}\par
+        \vspace{0.32cm}%
+        {\sffamily\mdseries\fontsize{11}{14}\selectfont
+         \textcolor{white}{\insertauthor}\par}%
+        \vspace{0.16cm}%
+        {\sffamily\mdseries\fontsize{9.5}{12}\selectfont
+         \textcolor{white!82!maincolor}{\insertdate}\par}};
+    % artwork
+    \collegeTitleArt
+  \end{tikzpicture}%
 }
 
-% title page
-\setbeamertemplate{title page}{
-    \hspace{-12mm}  % pull back the box in an inelegant way - but it works!
-    \begin{beamercolorbox}[wd=0.9\textwidth, sep=10pt, leftskip=8mm]{title}
-        {\usebeamerfont{title}\inserttitle}\\
-        \vskip5pt{\usebeamerfont{subtitle}\insertsubtitle}\\
-        \vskip5pt{\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor}\\
-        \vskip5pt{\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate}
-    \end{beamercolorbox}
-}
-
-\renewcommand{\maketitle}{
+\renewcommand{\maketitle}{%
     \begingroup
         \setbeamertemplate{footline}{}
-        \setbeamertemplate{background}{
-            \includegraphics[height=\paperheight]{\backgroundPath}
-        }
-        \begin{frame}
-            \titlepage
+        \setbeamertemplate{headline}{}
+        \setbeamercolor{background canvas}{bg=maincolor}
+        \begin{frame}[plain]
+            \AddToShipoutPictureFG*{%
+              \AtPageUpperLeft{\collegeTitlePage}%
+            }%
         \end{frame}
     \endgroup
 }
@@ -282,15 +589,18 @@
 \newcommand{\QApage}{
     \begingroup
         \setbeamertemplate{footline}{}
+        \setbeamertemplate{headline}{}
         \themecolor{colorbg}
-        
-        \begin{frame}{}
+        \setbeamertemplate{background}{\collegeGradientBackground}
+
+        \begin{frame}[c,plain]
             \centering
             \begin{minipage}{\textwidth}
                 \usebeamercolor[fg]{normal text}
                 \centering
-                \Huge $$\mathcal Q \& \mathcal A$$
-                \Large \qaStr
+                {\sffamily\bfseries\fontsize{44}{50}\selectfont Q \& A\par}
+                \vspace{0.5cm}
+                {\sffamily\fontsize{14}{18}\selectfont \qaStr\par}
             \end{minipage}
         \end{frame}
     \endgroup
@@ -302,14 +612,18 @@
 
     \begingroup
     \themecolor{colorbg}
-    \begin{frame}[allowframebreaks]{References}{\,}
+    \setbeamertemplate{headline}{}
+    \begin{frame}[plain,allowframebreaks]{}
+        \vspace{0.4cm}
+        {\color{white}\sffamily\bfseries\fontsize{16}{19}\selectfont References\par}
+        \vspace{0.3cm}
         \tiny
         \printbibliography[heading=none]
     \end{frame}
 \endgroup
 }
 
-% --- commands ---
+% --- commands ---------------------------------------------------------------
 % set colored hyperlinks command
 \newcommand{\bhref}[2]{\textcolor{airforceblue}{\href{#1}{#2}}}
 
@@ -340,3 +654,78 @@
 % coloured texttt
 \newcommand{\ctexttt}[1]{\texttt{\textcolor{maincolor}{#1}}}
 \newcommand{\btexttt}[1]{\texttt{\textcolor{airforceblue}{#1}}}
+
+% --- new components ---------------------------------------------------------
+% NOTE: LaTeX does not restore the font when a group ends, so every title
+% group below is followed by an explicit font reset -- otherwise the body
+% would keep the bold accent face.
+%
+% \callout[<title>]{<body>}
+% A tinted panel with a solid accent bar down the left edge.
+\newcommand{\callout}[2][]{%
+  \par\noindent
+  % baseline at the top of the box, so the panel lines up with its neighbours
+  \begin{tikzpicture}[baseline=(current bounding box.north)]
+    \node[anchor=north west, fill=mainlight, rounded corners=2.5pt,
+          inner xsep=0.46cm, inner ysep=0.26cm,
+          text width=\dimexpr\linewidth-0.92cm\relax] (cal) at (0,0) {%
+            \ifstrempty{#1}{}{%
+              {\sffamily\bfseries\textcolor{maincolor}{#1}\par}%
+              \normalfont\selectfont\vspace{0.12cm}}%
+            #2};
+    \fill[maincolor] ([xshift=0.06cm,yshift=0.07cm]cal.north west)
+                     rectangle ([xshift=0.20cm,yshift=-0.07cm]cal.south west);
+  \end{tikzpicture}%
+  \par\vspace{0.25cm}%
+}
+
+% \stat{<label>}{<value>}
+% A small tinted card: a bold accent label above a larger value.
+\newcommand{\stat}[2]{%
+  \par\noindent
+  % baseline at the top of the box, so the panel lines up with its neighbours
+  \begin{tikzpicture}[baseline=(current bounding box.north)]
+    \node[anchor=north west, fill=mainlight, rounded corners=2.5pt,
+          inner xsep=0.34cm, inner ysep=0.22cm,
+          text width=\dimexpr\linewidth-0.68cm\relax] (st) at (0,0) {%
+            {\sffamily\bfseries\textcolor{maincolor}{\footnotesize #1}\par}%
+            \sffamily\mdseries\selectfont\vspace{0.10cm}%
+            {\sffamily\fontsize{12}{14}\selectfont #2\par}};
+  \end{tikzpicture}%
+  \par\vspace{0.20cm}%
+}
+
+% \card{<number>}{<title>}{<body>}
+% A numbered process card.
+\newcommand{\card}[3]{%
+  \par\noindent
+  % baseline at the top of the box, so the panel lines up with its neighbours
+  \begin{tikzpicture}[baseline=(current bounding box.north)]
+    \node[anchor=north west, fill=mainlight, rounded corners=2.5pt,
+          inner xsep=0.34cm, inner ysep=0.24cm,
+          text width=\dimexpr\linewidth-0.68cm\relax] (cd) at (0,0) {%
+            {\sffamily\bfseries\textcolor{maincolor}{\fontsize{11}{13}\selectfont
+             #1\enspace #2}\par}%
+            \sffamily\mdseries\selectfont\vspace{0.14cm}%
+            {\sffamily #3\par}};
+  \end{tikzpicture}%
+  \par\vspace{0.20cm}%
+}
+
+% \keypoint{<text>}
+% A bold accent sentence introduced by a hollow arrow.
+\newcommand{\keypoint}[1]{%
+  \par\noindent
+  \begin{tikzpicture}[baseline=-0.55ex]
+    \draw[maincolor, line width=0.9pt] (0,0) -- (0.60,0);
+    \draw[maincolor, line width=0.9pt] (0.42,0.20) -- (0.72,0) -- (0.42,-0.20);
+  \end{tikzpicture}\hspace{0.18cm}%
+  {\sffamily\bfseries\color{maincolor}#1}%
+  \par\vspace{0.18cm}%
+}
+
+% \thead{...} -- bold accent table header cell
+\newcommand{\thead}[1]{{\sffamily\bfseries\color{maincolor}#1}}
+
+% \zebra -- alternate table rows with a faint tint (call before \begin{tabular})
+\newcommand{\zebra}{\rowcolors{2}{mainpaler}{white}}
